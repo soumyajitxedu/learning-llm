@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soumyajit Das - Portfolio</title>
+    <style>
+        /* --- 1. Basic Setup & Styling --- */
+        :root {
+            --primary-color: #00aaff;
+            --background-color: #030014;
+            --text-color: #e0e0e0;
+            --card-background: rgba(10, 17, 36, 0.7);
+            --card-border-color: rgba(0, 170, 255, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', 'Roboto', sans-serif;
+            overflow-x: hidden;
+            overflow-y: hidden; /* Initially hidden until loader is gone */
+        }
+
+        /* --- 2. Loader Screen --- */
+        .loader-screen {
+            position: fixed; z-index: 999; top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background-color: var(--background-color);
+            display: flex; justify-content: center; align-items: center;
+            transition: opacity 1s ease-out;
+        }
+        .loader-screen.hidden { opacity: 0; pointer-events: none; }
+        .loading { font-size: 2rem; font-weight: 600; letter-spacing: 0.5em; color: white; }
+        .loading span { animation: blur 1.5s calc(var(--i) / 5 * 1s) alternate infinite; }
+        @keyframes blur { to { filter: blur(5px); opacity: 0.5; } }
+
+        /* --- 3. 3D Background Canvas --- */
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+
+        /* --- 4. Content Sections --- */
+        .content-wrapper {
+            position: relative; z-index: 1; width: 100%;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .content-section {
+            width: 90%; max-width: 900px; min-height: 100vh;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; padding: 80px 20px;
+            opacity: 0; transform: translateY(30px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+        .content-section.visible { opacity: 1; transform: translateY(0); }
+
+        /* --- 5. Specific Section Styling --- */
+        #hero h1 {
+            font-size: 4rem; font-weight: 700;
+            background: linear-gradient(90deg, #ffffff, var(--primary-color));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: 10px; text-shadow: 0 0 15px rgba(0, 170, 255, 0.3);
+        }
+        #hero h2 { font-size: 1.5rem; font-weight: 300; color: var(--text-color); margin-bottom: 20px; }
+        
+        .card {
+            background: var(--card-background);
+            border: 1px solid var(--card-border-color);
+            border-radius: 15px; padding: 30px;
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .section-title { font-size: 2.5rem; color: var(--primary-color); margin-bottom: 40px; font-weight: 600; }
+        
+        /* ===== NEW: BIODATA SECTION STYLING ===== */
+        #profile .card { max-width: 1000px; width: 100%; text-align: left; }
+        .bio-nav { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 30px; border-bottom: 1px solid var(--card-border-color); padding-bottom: 15px; }
+        .bio-nav-item {
+            padding: 8px 15px; border-radius: 20px;
+            background: transparent; color: var(--text-color);
+            cursor: pointer; font-weight: 500;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .bio-nav-item:hover { color: var(--primary-color); background: rgba(0, 170, 255, 0.1); }
+        .bio-nav-item.active {
+            background: var(--primary-color); color: var(--background-color);
+            border-color: var(--primary-color);
+        }
+
+        .bio-tab-content { display: none; line-height: 1.7; font-size: 1.1rem; }
+        .bio-tab-content.active { display: block; animation: contentFadeIn 0.6s ease-out forwards; }
+        @keyframes contentFadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .bio-tab-content h4 { color: var(--primary-color); margin-top: 20px; margin-bottom: 10px; font-size: 1.3rem; }
+        .bio-tab-content ul { list-style-position: inside; padding-left: 10px; }
+
+        .social-links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .social-link {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px; border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            text-decoration: none; color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+        .social-link:hover { background: var(--primary-color); color: var(--background-color); }
+        .social-link svg { width: 22px; height: 22px; fill: currentColor; }
+
+        /* Other sections styling ... */
+        .skills-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
+        .skill-badge { background: rgba(0, 170, 255, 0.1); color: var(--primary-color); padding: 10px 20px; border-radius: 20px; font-weight: 500; border: 1px solid rgba(0, 170, 255, 0.3); transition: all 0.3s ease; }
+        .skill-badge:hover { background: var(--primary-color); color: var(--background-color); }
+        .projects-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; width: 100%; }
+        .project-card { text-align: left; transition: transform 0.3s ease; }
+        .project-card:hover { transform: translateY(-10px); }
+        .project-card h3 { color: var(--primary-color); margin-bottom: 10px; }
+        .project-card p { margin-bottom: 15px; font-size: 0.95rem; }
+        .project-links a { color: var(--primary-color); text-decoration: none; margin-right: 15px; font-weight: 600; }
+        .project-links a:hover { text-decoration: underline; }
+        #contact .card { display: flex; gap: 30px; }
+        #contact a { color: var(--text-color); text-decoration: none; font-size: 1.2rem; transition: color 0.3s ease; }
+        #contact a:hover { color: var(--primary-color); }
+        .scroll-down { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); color: white; font-size: 1rem; letter-spacing: 2px; animation: bounce 2s infinite; }
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); } 40% { transform: translateX(-50%) translateY(-20px); } 60% { transform: translateX(-50%) translateY(-10px); } }
+        @media (max-width: 768px) { #hero h1 { font-size: 3rem; } #hero h2 { font-size: 1.2rem; } .section-title { font-size: 2rem; } }
+    </style>
+</head>
+<body>
+
+    <div class="loader-screen">
+        <div class="loading">
+          <span style="--i: 0">L</span><span style="--i: 1">O</span><span style="--i: 2">A</span><span style="--i: 3">D</span><span style="--i: 4">I</span><span style="--i: 5">N</span><span style="--i: 6">G</span>
+        </div>
+    </div>
+    
+    <canvas id="bg-canvas"></canvas>
+    
+    <div class="content-wrapper">
+
+        <!-- ===== HERO SECTION ===== -->
+        <section id="hero" class="content-section">
+            <h1>Soumyajit Das</h1>
+            <h2>Tech & Science Enthusiast | Digital Alchemist</h2>
+            <div class="scroll-down">SCROLL DOWN ↓</div>
+        </section>
+
+        <!-- ===== NEW: PROFILE/BIODATA SECTION ===== -->
+        <section id="profile" class="content-section">
+            <div class="card">
+                <h2 class="section-title" style="text-align: center;">Digital Profile</h2>
+                
+                <!-- Tab Navigation -->
+                <nav class="bio-nav">
+                    <div class="bio-nav-item active" data-target="#bio-prelude">Prelude</div>
+                    <div class="bio-nav-item" data-target="#bio-architect">The Architect</div>
+                    <div class="bio-nav-item" data-target="#bio-alchemist">The Alchemist</div>
+                    <div class="bio-nav-item" data-target="#bio-growth">Self-Reflection</div>
+                    <div class="bio-nav-item" data-target="#bio-connect">Connect</div>
+                </nav>
+
+                <!-- Tab Content -->
+                <div class="bio-content">
+                    <div id="bio-prelude" class="bio-tab-content active">
+                        <h4>The Emergence of a Digital Native</h4>
+                        <p>Born into a world interwoven with technology, my journey began in West Bengal, India, with an innate curiosity to dismantle the digital realm conceptually. It wasn't about passive consumption; it was about understanding the 'how' and 'why' behind every pixel and line of code. This self-directed exploration, set against a stable academic backdrop at Holy Faith Academy, defined my unique perspective and skillset from an early age.</p>
+                    </div>
+
+                    <div id="bio-architect" class="bio-tab-content">
+                        <h4>The Architect Within: Personality & Mindset</h4>
+                        <p>I identify as an introvert and an <strong>ISTP-T (Virtuoso)</strong>, thriving on deep focus and hands-on problem-solving. My energy is recharged through solitary exploration of complex systems. This fuels a deeply analytical approach, where I deconstruct everything from code to social dynamics to understand their underlying mechanisms.</p>
+                        <ul>
+                            <li><strong>Analytical Lens:</strong> I observe, deconstruct, and recognize patterns to tackle complex problems systematically.</li>
+                            <li><strong>Empathic Idealism:</strong> Beneath the analytical surface lies a creative and imaginative drive to build elegant and impactful solutions.</li>
+                            <li><strong>Conflict Avoidance:</strong> My preferred arena is intellectual. I solve problems with logic and code, not confrontation.</li>
+                            <li><strong>Self-Directed Learning:</strong> My learning is driven by insatiable curiosity and a desire for mastery, not external validation.</li>
+                        </ul>
+                    </div>
+                    
+                    <div id="bio-alchemist" class="bio-tab-content">
+                        <h4>The Digital Alchemist: Skill Spectrum</h4>
+                        <p>My engagement with technology is a deep dive into multiple interconnected domains. I blend skills from disparate fields to create innovative solutions.</p>
+                        <h4>Core Competencies:</h4>
+                        <ul>
+                            <li><strong>AI/ML Frontier:</strong> Neural Networks, Deep Learning, RAG, and Agentic AI. Aspiring to build my own LLM.</li>
+                            <li><strong>Programming & Cybersecurity:</strong> Proficient in Python, Java, and web languages. Actively learning networking, OS fundamentals, and cybersecurity tools like Nmap.</li>
+                            <li><strong>Design & Visualization:</strong> Advanced skills in Figma (UI/UX), Blender (3D), and video editing for a complete creative pipeline.</li>
+                            <li><strong>Development:</strong> Full-stack web development, Android ecosystem exploration, and cloud computing principles.</li>
+                        </ul>
+                    </div>
+
+                    <div id="bio-growth" class="bio-tab-content">
+                        <h4>Self-Reflection & Growth</h4>
+                        <p>Self-awareness is key to growth. I recognize areas where I am still developing and view them as opportunities to learn and improve.</p>
+                        <ul>
+                            <li><strong>Personal Traits:</strong> As an introvert, I'm more comfortable in small, trusted groups and am working on navigating larger social dynamics. I am learning to channel my many interests into deep expertise.</li>
+                            <li><strong>Challenges:</strong> I have experienced bullying, which has shaped my preference for intellectual over physical engagement. I am on a continuous journey of building self-confidence and finding my unique path.</li>
+                            <li><strong>Mindset:</strong> I am actively moving from a "not good at anything" mindset to recognizing that my broad interests are a strength for cross-disciplinary innovation. My middle-class background fuels my drive to achieve. I embrace being a work-in-progress, constantly learning and refining.</li>
+                        </ul>
+                    </div>
+
+                    <div id="bio-connect" class="bio-tab-content">
+                        <h4>Connect & Collaborate</h4>
+                        <p>Explore my work, follow my journey, and connect with me across various platforms.</p>
+                        <div class="social-links-grid">
+                            <!-- SVG icons are embedded for a self-contained file -->
+                            <a href="https://github.com/soumyajitxedu" target="_blank" class="social-link"><svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg> GitHub</a>
+                            <a href="https://www.linkedin.com/in/soumyajit-das-6279412b0/" target="_blank" class="social-link"><svg viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg> LinkedIn</a>
+                            <a href="https://leetcode.com/u/Soumyajitxedu/" target="_blank" class="social-link"><svg viewBox="0 0 24 24"><path d="M13.483 0a1.374 1.374 0 0 0-.961.438L7.116 6.226l-3.854 4.126a5.266 5.266 0 0 0-1.209 3.04L2 22.282h.023l.023.023L4.333 24l.023.023h.023v-.023h16.284V1.374A1.374 1.374 0 0 0 19.626 0H13.483zM18.254 19.5H7.373l1.125-2.25h9.756V19.5zM18.254 16H6.248l1.125-2.25h10.881V16zM18.254 12.5H5.122l1.125-2.25h12.007V12.5z"/></svg> LeetCode</a>
+                            <a href="https://www.hackerrank.com/profile/soumyajitxedu" target="_blank" class="social-link"><svg viewBox="0 0 256 256"><path d="M113.8,161.73,89.35,128,113.8,94.27V50.8H65.48V161.73h48.32ZM224,32H142.2V94.27L166.65,128,142.2,161.73V225.2H190.52V161.73H224V32Z"/></svg> HackerRank</a>
+                            <a href="https://huggingface.co/Soumyajitxedu" target="_blank" class="social-link"><svg viewBox="0 0 24 24"><path d="M20.56,13.25a2.1,2.1,0,0,1,0-2.5l-2.6-4.51A2.1,2.1,0,0,0,16.15,5.1H7.85a2.1,2.1,0,0,0-1.81,1.14l-2.6,4.51a2.1,2.1,0,0,1,0,2.5l2.6,4.51A2.1,2.1,0,0,0,7.85,18.9h8.3a2.1,2.1,0,0,0,1.81-1.14ZM9.6,14.2a1.2,1.2,0,1,1,1.2-1.2A1.2,1.2,0,0,1,9.6,14.2Zm4.8,0a1.2,1.2,0,1,1,1.2-1.2A1.2,1.2,0,0,1,14.4,14.2ZM12,10.2a.6.6,0,0,1-.6-.6V8.4a.6.6,0,0,1,1.2,0v1.2A.6.6,0,0,1,12,10.2Z"/></svg> Hugging Face</a>
+                            <a href="https://www.kaggle.com/soumyajitworkspace" target="_blank" class="social-link"><svg viewBox="0 0 24 24"><path d="M12.2,2.2,4.9,9.5l7.3,7.3L19.5,9.5ZM16,17l-3.8,3.8L4.9,13.5v5.7l7.3,7.3,7.3-7.3V13.5Z"/></svg> Kaggle</a>
+                            <a href="https://g.dev/SOUMYAJITDAS" target="_blank" class="social-link"><svg viewBox="0 0 24 24"><path d="M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10,10-4.48,10-10S17.52,2,12,2ZM11.1,15.6H9.3V8.4h1.8Zm4.8,0H14.1V8.4h1.8Z"/></svg> Google Dev</a>
+                            <a href="https://codepen.io/soumyajitdas" target="_blank" class="social-link"><svg viewBox="0 0 24 24"><path d="M22.1,8.4l-6.7,6.7L8.7,8.4,15.4,1.7ZM1.9,15.6l6.7-6.7,6.7,6.7-6.7,6.7Z"/></svg> CodePen</a>
+                            <a href="https://x.com/soumyajitxedu" target="_blank" class="social-link"><svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> X (Twitter)</a>
+                            <a href="https://www.reddit.com/u/SOUMYAJITXEDU" target="_blank" class="social-link"><svg viewBox="0 0 24 24"><path d="M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10,10-4.48,10-10S17.52,2,12,2Zm6.4,11.5c-0.83,0.83-2.17,0.83-3,0L12,10.1l-3.4,3.4c-0.83,0.83-2.17,0.83-3,0s-0.83-2.17,0-3l3.4-3.4,3.4,3.4,3.4-3.4c0.83-0.83,2.17-0.83,3,0s0.83,2.17,0,3Z"/></svg> Reddit</a>
+                            <a href="https://www.instagram.com/soumyajitxedu" target="_blank" class="social-link"><svg viewBox="0 0 24 24"><path d="M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10,10-4.48,10-10S17.52,2,12,2Zm4.9,8.9c0.55,0,1,0.45,1,1v4.2c0,0.55-0.45,1-1,1h-4.2c-0.55,0-1-0.45-1-1V9.9c0-0.55,0.45-1,1-1h4.2ZM12,13.5c-0.83,0-1.5-0.67-1.5-1.5s0.67-1.5,1.5-1.5,1.5,0.67,1.5,1.5S12.83,13.5,12,13.5Z"/></svg> Instagram</a>
+                            <a href="https://medium.com/@soumyajitworks26" target="_blank" class="social-link"><svg viewBox="0 0 24 24"><path d="M7,2v20h10V2H7z M12,18c-2.76,0-5-2.24-5-5s2.24-5,5-5,5,2.24,5,5S14.76,18,12,18z M12,10c-1.66,0-3,1.34-3,3s1.34,3,3,3,3-1.34,3-3S13.66,10,12,10z"/></svg> Medium</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Other sections remain here... -->
+
+    </div>
+
+    <!-- ===== JAVASCRIPT SECTION ===== -->
+    <script type="module">
+        // --- 1. Imports ---
+        import * as THREE from 'https://cdn.skypack.dev/three@0.132.2';
+        import { EffectComposer } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/postprocessing/RenderPass.js';
+        import { ShaderPass } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/postprocessing/ShaderPass.js';
+
+        // --- 2. Three.js Scene Setup (as before) ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector('#bg-canvas'), antialias: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.position.setZ(30);
+        const starGeometry = new THREE.BufferGeometry();
+        const starCount = 5000;
+        const positions = new Float32Array(starCount * 3);
+        for (let i = 0; i < starCount * 3; i++) { positions[i] = (Math.random() - 0.5) * 600; }
+        starGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const starMaterial = new THREE.PointsMaterial({ size: 0.5, color: 0xffffff, transparent: true, opacity: 0.8 });
+        const stars = new THREE.Points(starGeometry, starMaterial);
+        scene.add(stars);
+        const techGeometry = new THREE.IcosahedronGeometry(10, 5);
+        const techMaterial = new THREE.PointsMaterial({ color: 0x00aaff, size: 0.1, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+        const techSphere = new THREE.Points(techGeometry, techMaterial);
+        scene.add(techSphere);
+
+        // --- 3. Post-Processing Setup (as before) ---
+        const composer = new EffectComposer(renderer);
+        composer.addPass(new RenderPass(scene, camera));
+        const CustomShader = {
+            uniforms: { "tDiffuse": { value: null }, "iTime": { value: 0.0 }, "uRGBShiftIntensity": { value: 0.003 }, "uGrainIntensity": { value: 0.03 }, },
+            vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+            fragmentShader: `uniform float iTime; uniform sampler2D tDiffuse; varying vec2 vUv; uniform float uRGBShiftIntensity; uniform float uGrainIntensity; highp float random(vec2 co) { highp float a=12.9898; highp float b=78.233; highp float c=43758.5453; highp float dt=dot(co.xy,vec2(a,b)); highp float sn=mod(dt,3.14); return fract(sin(sn)*c); } vec3 grain(vec2 uv, vec3 col, float amount) { float noise = random(uv + iTime); col += (noise - .5) * amount; return col; } vec4 RGBShift(sampler2D tex, vec2 uv, float amount) { float noise = random(uv + iTime) * 0.5 + 0.5; vec2 offset = amount * vec2(cos(noise), sin(noise)); vec4 rTex = texture(tex, uv + offset); vec4 gTex = texture(tex, uv); vec4 bTex = texture(tex, uv - offset); return vec4(rTex.r, gTex.g, bTex.b, gTex.a); } void main() { vec2 uv = vUv; vec4 tex = RGBShift(tDiffuse, uv, uRGBShiftIntensity); vec3 col = tex.xyz; col = grain(uv, col, uGrainIntensity); gl_FragColor = vec4(col, 1.0); }`
+        };
+        const customPass = new ShaderPass(CustomShader);
+        composer.addPass(customPass);
+
+        // --- 4. Animation Loop (as before) ---
+        let mouseX = 0, mouseY = 0;
+        document.addEventListener('mousemove', (event) => {
+            mouseX = (event.clientX - window.innerWidth / 2) / 100;
+            mouseY = (event.clientY - window.innerHeight / 2) / 100;
+        });
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            customPass.uniforms.iTime.value = clock.getElapsedTime();
+            stars.rotation.x += 0.0001; stars.rotation.y += 0.0001;
+            techSphere.rotation.x += 0.0005; techSphere.rotation.y += 0.0005;
+            camera.position.x += (mouseX - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY - camera.position.y) * 0.05;
+            camera.lookAt(scene.position);
+            composer.render();
+        }
+        animate();
+
+        // --- 5. DOM Interaction & Animations ---
+        // Loader Hiding
+        window.addEventListener('load', () => {
+            const loader = document.querySelector('.loader-screen');
+            setTimeout(() => {
+                loader.classList.add('hidden');
+                document.body.style.overflowY = 'auto';
+            }, 2500);
+        });
+        
+        // Content Fade-in on Scroll
+        const sections = document.querySelectorAll('.content-section');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('visible');
+            });
+        }, { threshold: 0.1 });
+        sections.forEach(section => observer.observe(section));
+
+        // NEW: Biodata Tab Switching Logic
+        const bioNavItems = document.querySelectorAll('.bio-nav-item');
+        const bioTabs = document.querySelectorAll('.bio-tab-content');
+
+        bioNavItems.forEach(item => {
+            item.addEventListener('click', () => {
+                // 1. Remove active class from all nav items and tabs
+                bioNavItems.forEach(nav => nav.classList.remove('active'));
+                bioTabs.forEach(tab => tab.classList.remove('active'));
+                
+                // 2. Add active class to the clicked item
+                item.classList.add('active');
+                
+                // 3. Find and activate the corresponding content tab
+                const targetId = item.getAttribute('data-target');
+                const targetTab = document.querySelector(targetId);
+                if(targetTab) {
+                    targetTab.classList.add('active');
+                }
+            });
+        });
+
+        // Window Resizing
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>
